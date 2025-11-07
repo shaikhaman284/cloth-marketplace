@@ -51,6 +51,9 @@ INSTALLED_APPS = [
     'apps.reviews',
 ]
 
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Add this line
     'django.middleware.security.SecurityMiddleware',
@@ -136,9 +139,21 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework Configuration
+# Find REST_FRAMEWORK and update:
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+}
+
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("Bearer",),  # <<< THIS LINE IS REQUIRED
 }
 
 # CORS Configuration (Allow all for development)
@@ -147,3 +162,6 @@ CORS_ALLOW_ALL_ORIGINS = True  # Change this in production
 # Media Files (Product Images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Firebase Configuration
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, config('FIREBASE_CREDENTIALS_PATH'))
