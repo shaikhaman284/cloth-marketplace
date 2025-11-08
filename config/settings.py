@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,11 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-j(wx^l=eo0*quw)f784ss09bldq810ypv0@bplfadk-bg6&qbj'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+
 
 
 # Application definition
@@ -49,6 +52,8 @@ INSTALLED_APPS = [
     'apps.products',
     'apps.orders',
     'apps.reviews',
+    'apps.core',  # Add this
+
 ]
 
 # Custom User Model
@@ -57,6 +62,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Add this line
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this line
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -158,6 +164,9 @@ SIMPLE_JWT = {
 
 # CORS Configuration (Allow all for development)
 CORS_ALLOW_ALL_ORIGINS = True  # Change this in production
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # Media Files (Product Images)
 MEDIA_URL = '/media/'
@@ -165,3 +174,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Firebase Configuration
 FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, config('FIREBASE_CREDENTIALS_PATH'))
+
+# Add these security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+# Static files configuration (add at bottom)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# Firebase Configuration
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, config('FIREBASE_CREDENTIALS_PATH', default='firebase-credentials.json'))
+FIREBASE_CREDENTIALS_JSON = config('FIREBASE_CREDENTIALS_JSON', default=None)
