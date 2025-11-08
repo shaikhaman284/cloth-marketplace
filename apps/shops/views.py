@@ -117,3 +117,128 @@ def list_approved_shops(request):
         'city': city,
         'shops': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Sum, Count
+from datetime import datetime, timedelta
+from apps.orders.models import Order
+from apps.products.models import Product
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def seller_dashboard(request):
+    """
+    Get seller dashboard statistics
+    GET /api/sellers/dashboard
+
+    Returns:
+    - Product stats
+    - Order stats
+    - Earnings (delivered orders)
+    - Recent orders
+    """
+
+    # Check if user is seller
+    if request.user.user_type != 'seller':
+        return Response({
+            'success': False,
+            'message': 'Only sellers can access dashboard'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # Check if seller has shop
+    if not hasattr(request.user, 'shop'):
+        return Response({
+            'success': False,
+            'message': 'No shop registered'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    shop = request.user.shop
+
+    # Date ranges
+    today = datetime.now().date()
+    this_month = datetime.now().replace(day=1).date()
+
+    # Product statistics
+    products = Product.objects.filter(shop=shop)
+    product_stats = {
+        'total_products': products.count(),
+        'active_products': products.filter(is_active=True).count(),
+        'out_of_stock': products.filter(stock_quantity=0, is_active=True).count(),
+    }
+
+    # Order statistics
+    orders = Order.objects.filter(shop=shop)
+
+    order_stats = {
+        'total_orders': orders.count(),
+        'pending_orders': orders.filter(order_status='placed').count(),
+        'confirmed_orders': orders.filter(order_status='confirmed').count(),
+        'shipped_orders': orders.filter(order_status='shipped').count(),
+        'delivered_orders': orders.filter(order_status='delivered').count(),
+        'cancelled_orders': orders.filter(order_status='cancelled').count(),
+
+        # Today's stats
+        'today_orders': orders.filter(placed_at__date=today).count(),
+        'today_revenue': orders.filter(
+            placed_at__date=today,
+            order_status='delivered'
+        ).aggregate(total=Sum('seller_payout_amount'))['total'] or 0,
+
+        # This month
+        'month_orders': orders.filter(placed_at__date__gte=this_month).count(),
+        'month_revenue': orders.filter(
+            placed_at__date__gte=this_month,
+            order_status='delivered'
+        ).aggregate(total=Sum('seller_payout_amount'))['total'] or 0,
+    }
+
+    # Earnings statistics
+    earnings = {
+        'total_earned': orders.filter(
+            order_status='delivered'
+        ).aggregate(total=Sum('seller_payout_amount'))['total'] or 0,
+
+        'pending_earnings': orders.filter(
+            order_status__in=['confirmed', 'shipped']
+        ).aggregate(total=Sum('seller_payout_amount'))['total'] or 0,
+
+        'total_commission_paid': orders.filter(
+            order_status='delivered'
+        ).aggregate(total=Sum('commission_amount'))['total'] or 0,
+    }
+
+    # Recent orders
+    from apps.orders.serializers import OrderSerializer
+    recent_orders = orders.select_related('customer').prefetch_related('items').order_by('-placed_at')[:5]
+    recent_orders_data = OrderSerializer(recent_orders, many=True, context={'request': request}).data
+
+    # Shop info
+    shop_info = {
+        'shop_name': shop.shop_name,
+        'city': shop.city,
+        'commission_rate': f"{shop.commission_rate}%",
+        'is_approved': shop.is_approved,
+        'approval_status': shop.approval_status,
+    }
+
+    return Response({
+        'success': True,
+        'shop_info': shop_info,
+        'product_stats': product_stats,
+        'order_stats': order_stats,
+        'earnings': earnings,
+        'recent_orders': recent_orders_data,
+        'pricing_info': {
+            'note': f"You earn base prices. Commission ({shop.commission_rate}%) is added to customer's price.",
+            'example': {
+                'your_price': '₹1000',
+                'customer_pays': f"₹{1000 * (1 + float(shop.commission_rate) / 100)}",
+                'platform_commission': f"₹{1000 * float(shop.commission_rate) / 100}"
+            }
+        }
+    }, status=status.HTTP_200_OK)
