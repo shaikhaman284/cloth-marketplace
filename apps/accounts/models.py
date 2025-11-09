@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+import uuid  # ← ADD THIS IMPORT
 
 
 class CustomUserManager(BaseUserManager):
@@ -7,10 +8,17 @@ class CustomUserManager(BaseUserManager):
         if not phone_number:
             raise ValueError("Users must have a phone number")
 
+        # ↓ ADD THESE 4 LINES ↓
+        # Handle firebase_uid - generate if not provided
+        firebase_uid = extra_fields.pop('firebase_uid', None)
+        if not firebase_uid:
+            firebase_uid = f'admin_{uuid.uuid4().hex[:20]}'
+
         user = self.model(
             phone_number=phone_number,
             full_name=full_name,
             user_type=user_type,
+            firebase_uid=firebase_uid,  # ← ADD THIS LINE
             **extra_fields
         )
         user.set_password(password)
@@ -36,6 +44,7 @@ class CustomUserManager(BaseUserManager):
         )
 
 
+# ← CustomUser class stays EXACTLY the same, no changes needed
 class CustomUser(AbstractUser):
     USER_TYPES = (
         ('seller', 'Seller'),

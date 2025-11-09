@@ -195,3 +195,13 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Firebase Configuration
 FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
 FIREBASE_CREDENTIALS_JSON = config('FIREBASE_CREDENTIALS_JSON', default=None)
+
+# Trust Railway's proxy so HTTPS detection works
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Required when using a custom domain over HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.awm27.shop",
+    "https://*.railway.app",
+]
