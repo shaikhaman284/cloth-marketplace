@@ -9,13 +9,14 @@ import os
 import json
 
 # Initialize Firebase Admin SDK
-if hasattr(settings, 'FIREBASE_CREDENTIALS_JSON'):
+if hasattr(settings, 'FIREBASE_CREDENTIALS_JSON') and settings.FIREBASE_CREDENTIALS_JSON:
     # Production: Load from environment variable
     cred_dict = json.loads(settings.FIREBASE_CREDENTIALS_JSON)
     cred = credentials.Certificate(cred_dict)
 else:
     # Development: Load from file
-    cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+    cred_path = os.path.join(settings.BASE_DIR, 'firebase-credentials.json')
+    cred = credentials.Certificate(cred_path)
 
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'clothmarket-de8e9.firebasestorage.app'  # Replace with your bucket
