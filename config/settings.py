@@ -204,4 +204,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_TRUSTED_ORIGINS = [
     "https://api.awm27.shop",
     "https://*.railway.app",
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> 00faa387432f5050bc8fbf162e634e5a0676d210
