@@ -178,8 +178,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, config('FIREBASE_CREDENTIALS_PATH'))
 
 # Add these security settings for production
+# Production Security Settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
