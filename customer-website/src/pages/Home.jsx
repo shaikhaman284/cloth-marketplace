@@ -21,6 +21,8 @@ export default function Home() {
     try {
       setLoading(true);
 
+      console.log('Starting to load data...');
+
       // Load categories, shops, and featured products
       const [categoriesRes, shopsRes, productsRes] = await Promise.all([
         apiService.getCategories(),
@@ -28,12 +30,26 @@ export default function Home() {
         apiService.getProducts({ page_size: 8, sort: 'newest' })
       ]);
 
-      setCategories(categoriesRes.categories || []);
-      setShops(shopsRes.shops || []);
-      setFeaturedProducts(productsRes.products || []);
+      console.log('Categories Response:', categoriesRes);
+      console.log('Shops Response:', shopsRes);
+      console.log('Products Response:', productsRes);
+
+      setCategories(categoriesRes?.categories || []);
+      setShops(shopsRes?.shops || []);
+
+      // Handle nested response structure: results.products
+      const products = productsRes?.results?.products || productsRes?.products || [];
+      console.log('Extracted products:', products);
+      setFeaturedProducts(products);
+
     } catch (error) {
       console.error('Error loading home data:', error);
-      toast.error('Failed to load data');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+      toast.error('Failed to load data: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -89,6 +105,7 @@ export default function Home() {
           </form>
         </div>
       </section>
+
 
       {/* Categories */}
       <section>

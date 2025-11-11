@@ -7,7 +7,7 @@ import { FiFilter } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function Products() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({});
@@ -26,6 +26,7 @@ export default function Products() {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, sortBy]);
 
   const loadProducts = async () => {
@@ -44,7 +45,12 @@ export default function Products() {
       if (filters.max_price) params.max_price = filters.max_price;
 
       const data = await apiService.getProducts(params);
-      setProducts(data.products || []);
+      console.log('Products API Response:', data);
+
+      // Handle nested response structure: results.products
+      const productsList = data?.results?.products || data?.products || [];
+      console.log('Extracted products:', productsList);
+      setProducts(productsList);
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Failed to load products');

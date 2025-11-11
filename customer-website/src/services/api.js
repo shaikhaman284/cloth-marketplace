@@ -17,6 +17,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Token ${token}`;
     }
+    console.log('API Request:', config.method.toUpperCase(), config.url, config.params);
     return config;
   },
   (error) => Promise.reject(error)
@@ -24,8 +25,12 @@ api.interceptors.request.use(
 
 // Response interceptor - handle errors
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    console.log('API Response:', response.config.url, response.data);
+    return response.data;
+  },
   (error) => {
+    console.error('API Error:', error.response?.status, error.response?.data);
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
@@ -38,29 +43,32 @@ api.interceptors.response.use(
 // API Methods
 export const apiService = {
   // Categories
-  getCategories: () => api.get('/categories'),
+  getCategories: () => api.get('/api/categories'),
 
   // Products
-  getProducts: (params) => api.get('/products', { params }),
-  getProduct: (id) => api.get(`/products/${id}`),
-  getProductReviews: (id, params) => api.get(`/products/${id}/reviews`, { params }),
+  getProducts: (params = {}) => {
+    console.log('getProducts called with params:', params);
+    return api.get('/api/products', { params });
+  },
+  getProduct: (id) => api.get(`/api/products/${id}`),
+  getProductReviews: (id, params) => api.get(`/api/products/${id}/reviews`, { params }),
 
   // Shops
-  getShops: () => api.get('/shops/approved'),
-  getShop: (id) => api.get(`/shops/${id}`),
+  getShops: () => api.get('/api/shops/approved'),
+  getShop: (id) => api.get(`/api/shops/${id}`),
 
   // Orders
-  createOrder: (data) => api.post('/orders/create', data),
-  getMyOrders: (params) => api.get('/orders/my-orders', { params }),
-  getOrder: (orderNumber) => api.get(`/orders/${orderNumber}`),
-  cancelOrder: (orderNumber, reason) => api.post(`/orders/${orderNumber}/cancel`, { reason }),
+  createOrder: (data) => api.post('/api/orders/create', data),
+  getMyOrders: (params) => api.get('/api/orders/my-orders', { params }),
+  getOrder: (orderNumber) => api.get(`/api/orders/${orderNumber}`),
+  cancelOrder: (orderNumber, reason) => api.post(`/api/orders/${orderNumber}/cancel`, { reason }),
 
   // Reviews
-  createReview: (data) => api.post('/reviews/create', data),
+  createReview: (data) => api.post('/api/reviews/create', data),
 
   // Auth
-  register: (data) => api.post('/auth/register', data),
-  verifyToken: (token) => api.post('/auth/verify-token', { firebase_id_token: token }),
+  register: (data) => api.post('/api/auth/register', data),
+  verifyToken: (token) => api.post('/api/auth/verify-token', { firebase_id_token: token }),
 };
 
 export default api;
